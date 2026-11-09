@@ -9,3 +9,12 @@ output "cd_user_secret_access_key" {
   sensitive   = true
 }
 
+output "ecr_repo_app" {
+  description = "The ECR repository for the application"
+  value       = aws_ecr_repository.app.repository_url
+}
+
+output "ecr_repo_proxy" {
+  description = "The ECR repository for the proxy"
+  value       = aws_ecr_repository.proxy.repository_url
+}
