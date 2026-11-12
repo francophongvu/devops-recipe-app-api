@@ -205,3 +205,21 @@ resource "aws_iam_user_policy_attachment" "rds" {
   user       = aws_iam_user.cd.name
   policy_arn = aws_iam_policy.rds.arn
 }
+
+###############################
+# Service-linked role for RDS #
+###############################
+# Replaces: aws iam create-service-linked-role --aws-service-name rds.amazonaws.com
+# One per AWS account, shared by all RDS resources. Kept in the setup stack so
+# destroying the deploy environment never deletes it.
+# If the role already exists in the account, import it once before applying:
+#   terraform import aws_iam_service_linked_role.rds \
+#     arn:aws:iam::<account-id>:role/aws-service-role/rds.amazonaws.com/AWSServiceRoleForRDS
+
+resource "aws_iam_service_linked_role" "rds" {
+  aws_service_name = "rds.amazonaws.com"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
