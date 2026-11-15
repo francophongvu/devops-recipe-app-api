@@ -224,6 +224,23 @@ resource "aws_iam_service_linked_role" "rds" {
   }
 }
 
+###############################
+# Service-linked role for ECS #
+###############################
+# Replaces: aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
+# Required before an ECS service can be created. One per AWS account.
+# If the role already exists in the account, import it once before applying:
+#   terraform import aws_iam_service_linked_role.ecs \
+#     arn:aws:iam::<account-id>:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS
+
+resource "aws_iam_service_linked_role" "ecs" {
+  aws_service_name = "ecs.amazonaws.com"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 #########################
 # Policy for ECS access #
 #########################
