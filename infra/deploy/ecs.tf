@@ -67,6 +67,10 @@ resource "aws_ecs_task_definition" "api" {
         },
         {
           name  = "DB_HOST"
+          value = aws_db_instance.main.address
+        },
+        {
+          name  = "DB_NAME"
           value = aws_db_instance.main.db_name
         },
         {
@@ -74,7 +78,7 @@ resource "aws_ecs_task_definition" "api" {
           value = aws_db_instance.main.username
         },
         {
-          name  = "DB_PASSWORD"
+          name  = "DB_PASS"
           value = aws_db_instance.main.password
         },
         {
