@@ -206,4 +206,8 @@ resource "aws_ecs_service" "api" {
     container_name   = "proxy"
     container_port   = 8000
   }
+
+  # The target group must be attached to the ALB (via the listener) before
+  # ECS will accept it.
+  depends_on = [aws_lb_listener.api]
 }

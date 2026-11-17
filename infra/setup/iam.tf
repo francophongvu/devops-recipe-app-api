@@ -241,6 +241,23 @@ resource "aws_iam_service_linked_role" "ecs" {
   }
 }
 
+###############################
+# Service-linked role for ELB #
+###############################
+# Replaces: aws iam create-service-linked-role --aws-service-name elasticloadbalancing.amazonaws.com
+# Required before the first load balancer can be created. One per AWS account.
+# If the role already exists in the account, import it once before applying:
+#   terraform import aws_iam_service_linked_role.elb \
+#     arn:aws:iam::<account-id>:role/aws-service-role/elasticloadbalancing.amazonaws.com/AWSServiceRoleForElasticLoadBalancing
+
+resource "aws_iam_service_linked_role" "elb" {
+  aws_service_name = "elasticloadbalancing.amazonaws.com"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 #########################
 # Policy for ECS access #
 #########################
@@ -373,6 +390,19 @@ data "aws_iam_policy_document" "elb" {
       "elasticloadbalancing:ModifyListener"
     ]
     resources = ["*"]
+  }
+
+  # ELB needs its service-linked role (AWSServiceRoleForElasticLoadBalancing)
+  # the first time a load balancer is created in an account.
+  statement {
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::*:role/aws-service-role/elasticloadbalancing.amazonaws.com/AWSServiceRoleForElasticLoadBalancing"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["elasticloadbalancing.amazonaws.com"]
+    }
   }
 }
 
