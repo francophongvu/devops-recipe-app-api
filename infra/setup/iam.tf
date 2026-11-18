@@ -258,6 +258,23 @@ resource "aws_iam_service_linked_role" "elb" {
   }
 }
 
+###############################
+# Service-linked role for EFS #
+###############################
+# Replaces: aws iam create-service-linked-role --aws-service-name elasticfilesystem.amazonaws.com
+# Required before the first EFS file system can be created. One per AWS account.
+# If the role already exists in the account, import it once before applying:
+#   terraform import aws_iam_service_linked_role.efs \
+#     arn:aws:iam::<account-id>:role/aws-service-role/elasticfilesystem.amazonaws.com/AWSServiceRoleForAmazonElasticFileSystem
+
+resource "aws_iam_service_linked_role" "efs" {
+  aws_service_name = "elasticfilesystem.amazonaws.com"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 #########################
 # Policy for ECS access #
 #########################
@@ -415,4 +432,54 @@ resource "aws_iam_policy" "elb" {
 resource "aws_iam_user_policy_attachment" "elb" {
   user       = aws_iam_user.cd.name
   policy_arn = aws_iam_policy.elb.arn
+}
+
+#########################
+# Policy for EFS access #
+#########################
+
+data "aws_iam_policy_document" "efs" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "elasticfilesystem:DescribeFileSystems",
+      "elasticfilesystem:DescribeAccessPoints",
+      "elasticfilesystem:DeleteFileSystem",
+      "elasticfilesystem:DeleteAccessPoint",
+      "elasticfilesystem:DescribeMountTargets",
+      "elasticfilesystem:DeleteMountTarget",
+      "elasticfilesystem:DescribeMountTargetSecurityGroups",
+      "elasticfilesystem:DescribeLifecycleConfiguration",
+      "elasticfilesystem:CreateMountTarget",
+      "elasticfilesystem:CreateAccessPoint",
+      "elasticfilesystem:CreateFileSystem",
+      "elasticfilesystem:TagResource",
+    ]
+    resources = ["*"]
+  }
+
+  # EFS needs its service-linked role (AWSServiceRoleForAmazonElasticFileSystem)
+  # the first time a file system is created in an account; allow the CD user to
+  # create it.
+  statement {
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::*:role/aws-service-role/elasticfilesystem.amazonaws.com/AWSServiceRoleForAmazonElasticFileSystem"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["elasticfilesystem.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_policy" "efs" {
+  name        = "${aws_iam_user.cd.name}-efs"
+  description = "Allow user to manage EFS resources."
+  policy      = data.aws_iam_policy_document.efs.json
+}
+
+resource "aws_iam_user_policy_attachment" "efs" {
+  user       = aws_iam_user.cd.name
+  policy_arn = aws_iam_policy.efs.arn
 }

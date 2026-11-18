@@ -10,7 +10,7 @@ variable "project" {
 
 variable "contact" {
   description = "Contact information for tagging resources"
-  default     = "franco.phohg.209@gmail.com"
+  default     = "franco.phong.209@gmail.com"
 }
 
 variable "db_username" {
